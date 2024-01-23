@@ -4,3 +4,4 @@ Instalation:
 2. Download models from alcocholModelsFBX.txt link, export them to .glb, save in glb directory and add to downloaded repository from 1.* in path **/examlpes/models
 3. Download AlcoholSeries.html and add to downloaded repository from 1.* in path **/examlpes
 4. In oppened repository from 1* open AlcoholSeries.html with LiveServer
+![Alt text](Zrzut ekranu 2024-01-23 123625.png)
