@@ -1,0 +1,3 @@
+Download objects from link and convert them to .glb and save in glb dictionary.
+
+https://www.dropbox.com/scl/fo/aymuwsktsmm8oookhwkg0/h?rlkey=cmlp9g0hdioo2ywwpm7vby4dx&dl=0
