@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>My first three.js app</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            z-index: 1;
+        }
+
+        #alcocholInfo {
+            position: absolute;
+            top: 0;
+            left: 35%;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            z-index: 1;
+        }
+
+        table {
+            display: block;
+            margin: 5px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 8px;
+            width: 100px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            display: block;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "../build/three.module.js",
+                "three/addons/": "./jsm/"
+            }
+        }
+    </script>
+
+
+
+    <script type="module">
+
+        import * as THREE from 'three';
+
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // definicja sceny
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x8FFFFF);
+
+        //definicja kamery
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+
+
+        var startPosition = new THREE.Vector3(-30, 0, 5);
+        var endPosition = new THREE.Vector3(140, 0, 5);
+        camera.position.copy(startPosition);
+        var transitionDuration = 70000;
+        var currentTime = 0;
+
+
+
+        // definicja renderowania ( antyalizing dla wygładzenia krawedzi obiektów)
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        //dostosowanie rozmiaru wyswietlenia do okna
+        window.addEventListener('resize', () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(newWidth, newHeight);
+        });
+
+        //ładowanie obiektów
+        const loader = new GLTFLoader();
+        var objects = new Array(10);
+        var selectedValue;
+        var alcohols = ['methanol', 'ethanol', 'propanol', 'butanol', 'pentanol', 'hexanol', 'heptanol', 'octanol', 'nonanol', 'decanol'];
+
+        var objPositions2 = ['-30,0,0', '-21,0,0', '-10,0,0', '3,0,0', '18,0,0', '35,0,0', '55,0,0', '78,0,0', '104,00,0', '134,0,0'];
+
+        for (let i = 0; i < alcohols.length; i++) {
+            loader.load('models/glb/' + alcohols[i] + '.glb', function (gltf) {
+                objects[i] = gltf.scene;
+
+                objects[i].scale.set(0.5, 0.5, 0.5);
+                objects[i].rotation.y = 1.5;
+                objects[i].rotation.x = 0;
+                objects[i].rotation.z = 0;
+
+                scene.add(objects[i]);
+                var coordinates = objPositions2[i].split(',');
+
+                var x = parseInt(coordinates[0]);
+                var y = parseInt(coordinates[1]);
+                var z = parseInt(coordinates[2]);
+                objects[i].position.set(x, y, z);
+
+
+            }, undefined, function (error) {
+
+                console.log("erros");
+
+                console.error(error);
+
+            });
+        }
+
+
+
+
+
+        // Dodanie światła
+        const light0 = new THREE.DirectionalLight(0xAAAAAA, 3, 15);
+        light0.position.set(-21, 0, 50);
+        scene.add(light0);
+
+        const light1 = new THREE.DirectionalLight(0xAAAAAA, 3, 15);
+        light1.position.set(26, 0, 50);
+        scene.add(light1);
+
+        const light2 = new THREE.DirectionalLight(0xAAAAAA, 5, 15);
+        light2.position.set(104, 0, 50);
+        scene.add(light2);
+
+        const lightAmbient = new THREE.AmbientLight(0xAAAAAA, 3, 15);
+        lightAmbient.position.set(26, 0, 50);
+
+
+
+        //animacja obiektów
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!object) {
+
+                currentTime += 16;
+
+                var t = (currentTime % transitionDuration) / transitionDuration;
+
+                var interpolatedPosition = new THREE.Vector3().lerpVectors(startPosition, endPosition, t);
+
+                camera.position.copy(interpolatedPosition);
+            }
+            renderer.render(scene, camera);
+            if (object && isRotating) {
+                object.rotation.x += 0.01;
+                object.rotation.y += 0.01;
+            }
+        }
+
+        //zoom obiektu na scrollu
+        document.addEventListener('wheel', (event) => {
+            camera.position.z += event.deltaY * 0.01;
+
+            camera.position.z = Math.max(camera.position.z, 4);
+            camera.position.z = Math.min(camera.position.z, 80);
+            camera.updateProjectionMatrix();
+
+            renderer.render(scene, camera);
+        });
+
+        //rozpoczecie/zatrzymanie obracania
+        let isRotating;
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'r') {
+                rotate(); // Zmień stan obracania
+            }
+        });
+        //przywrocenie pozycji poczatkowej pod esc
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                resetRotation();
+            }
+        });
+
+        //obrot obiektu myszka gdy klikniety lewy przycisk
+
+        let isDragging = false;
+        let previousMousePosition = {
+            x: 0,
+            y: 0
+        };
+
+        function onMouseDown(event) {
+            isDragging = true;
+        }
+
+        function onMouseUp(event) {
+            isDragging = false;
+        }
+
+        function onMouseMove(event) {
+            if (!isDragging) return;
+
+            const deltaMove = {
+                x: event.clientX - previousMousePosition.x,
+                y: event.clientY - previousMousePosition.y
+            };
+
+            const deltaRotationQuaternion = new THREE.Quaternion()
+                .setFromEuler(new THREE.Euler(
+                    toRadians(deltaMove.y * 0.45),
+                    toRadians(deltaMove.x * 0.45),
+                    0,
+                    'XYZ'
+                ));
+
+            object.quaternion.multiplyQuaternions(deltaRotationQuaternion, object.quaternion);
+
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+        }
+
+        function toRadians(angle) {
+            return angle * (Math.PI / 180);
+        }
+
+        window.addEventListener('mousedown', onMouseDown, false);
+        window.addEventListener('mouseup', onMouseUp, false);
+        window.addEventListener('mousemove', onMouseMove, false);
+
+
+        animate();
+
+        function hello() {
+            console.log("hello");
+        }
+
+        window.hello = hello;
+
+        function rotate() {
+            isRotating = !isRotating;
+        }
+        window.rotate = rotate;
+
+        function resetRotation() {
+            isRotating = false;
+            object.rotation.x = 0;
+            object.rotation.y = 1.5;
+            object.rotation.z = 0;
+
+        }
+        window.resetRotation = resetRotation;
+
+        var cameraPositions = ['0,0,2'];
+        var object;
+        var currentCameraPosition;
+        function getSelectedRadioButtonValue(radio) {
+
+            var contents = [
+                {
+                    header: "CH3OH",
+
+                },
+                {
+                    header: "C2H5OH",
+
+                },
+                {
+                    header: "C3H7OH",
+
+                },
+                {
+                    header: "C4H9OH",
+
+                },
+                {
+                    header: "C5H11OH",
+
+                },
+                {
+                    header: "C6H13OH",
+
+                },
+                {
+                    header: "C7H15OH",
+                },
+                {
+                    header: "C8H17OH",
+                },
+                {
+                    header: "C9H19OH",
+                },
+                {
+                    header: "C10H21OH",
+                },
+            ];
+            var div = document.getElementById('alcocholInfo');
+
+            var value = radio.value;
+            div.innerHTML = `<h2>${contents[value].header}</h2>`;
+
+            div.style.display = 'block';
+
+            switch (radio.value) {
+
+                case "0":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(-30, 0, 5);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[0];
+                    break;
+
+                case "1":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(-21, 0, 5);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[1];
+                    break;
+
+                case "2":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(-10, 0, 6);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[2];
+                    break;
+
+                case "3":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(3, 0, 7);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[3];
+                    break;
+
+                case "4":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(18, 0, 8);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[4];
+                    break;
+
+                case "5":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(35, 0, 9);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[5];
+                    break;
+
+                case "6":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(55, 0, 10);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[6];
+                    break;
+
+                case "7":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(78, 0, 11);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[7];
+                    break;
+
+                case "8":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(104, 0, 12);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[8];
+                    break;
+
+                case "9":
+                    if (object)
+                        resetRotation();
+                    camera.position.set(134, 0, 13);
+                    currentCameraPosition = camera.position.clone();
+                    object = objects[9];
+                    break;
+
+            }
+
+
+        }
+
+        window.getSelectedRadioButtonValue = getSelectedRadioButtonValue;
+
+        function globalCamera() {
+
+            var div = document.getElementById('alcocholInfo');
+            div.style.display = 'none';
+            resetRotation();
+            var radioButton = document.getElementsByName("option");
+            radioButton.checked = false;
+            object = null;
+            camera.position.copy(currentCameraPosition);
+
+        }
+        window.globalCamera = globalCamera;
+
+        function changeLight() {
+
+            scene.remove(light0);
+            scene.remove(light1);
+            scene.remove(light2);
+            scene.add(lightAmbient);
+        }
+        window.changeLight = changeLight;
+
+        function resetLight() {
+            scene.remove(lightAmbient);
+            scene.add(light2);
+            scene.add(light1);
+            scene.add(light0);
+        }
+
+        window.resetLight = resetLight;
+
+
+    </script>
+
+    <div id="menu">
+        <h2>MENU</h2>
+        <table>Choose one of the following alcohols: </table>
+        <form>
+            <label>
+                <input type="radio" name="option" value="0" onchange="getSelectedRadioButtonValue(this)"> Methanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="1" onchange="getSelectedRadioButtonValue(this)"> Ethanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="2" onchange="getSelectedRadioButtonValue(this)"> Propanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="3" onchange="getSelectedRadioButtonValue(this)"> Butanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="4" onchange="getSelectedRadioButtonValue(this)"> Pentanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="5" onchange="getSelectedRadioButtonValue(this)"> Hexanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="6" onchange="getSelectedRadioButtonValue(this)"> Heptanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="7" onchange="getSelectedRadioButtonValue(this)"> Octanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="8" onchange="getSelectedRadioButtonValue(this)"> Nonanol
+            </label>
+            <br>
+
+            <label>
+                <input type="radio" name="option" value="9" onchange="getSelectedRadioButtonValue(this)"> Decanol
+            </label>
+            <br>
+        </form>
+        <table></table>
+        <table>After choose alcochol molecule u can:</table>
+        <table>MouseWheel to zoom in/out</table>
+        <table>Drag object with mouse to rotate</table>
+        <button onclick="rotate()">Start/Stop rotation</button>
+        <button onclick="resetRotation()">Reset rotation</button>
+        <button onclick="globalCamera()">Start show all animation</button>
+        <button onclick="changeLight()" ondblclick="resetLight()">Change light / dblClick to reset light</button>
+
+    </div>
+    <div id="alcocholInfo" style="display: none;">
+    </div>
+
+</body>
+
+</html>
